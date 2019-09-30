@@ -6,7 +6,6 @@
         content="width=device-width,initial-scale=1,shrink-to-fit=no,maximum-scale=1,minimum-scale=1,user-scalable=0,viewport-fit=cover"/>
   <title>家国梦</title>
   <style>
-    
     label{
       display: inline-block;
       width: 100px;
@@ -79,19 +78,19 @@
     let policyInput = document.querySelector("#policy");
     let albumInput = document.querySelector("#album");
     let taskInput = document.querySelector("#task");
-    
+
     let out = document.querySelector("#out");
-    
+
     /**
      * 在线状态，手动输入，在线是online，离线是offline，可以计算离线收益
      */
     let status = "online";
-  
+
     /**
      * 家园之光加成，手动输入，全国加省份
      */
     let extra = 0.2 + 0.15;
-  
+
     /**
      * 空中别墅 复兴公馆 人民石油 商贸中心 倍数未知待补充，目前按1倍处理
      * 所有建筑的基本信息
@@ -293,13 +292,13 @@
         ]
       },
     };
-  
+
     /**
      * 建筑星级倍数信息，直接固定免除每次计算，其实就是阶乘
      * @type {{"1": number, "2": number, "3": number, "4": number, "5": number}}
      */
     const star = {1: 1, 2: 2, 3: 6, 4: 24, 5: 120};
-  
+
     /**
      * 生成带星级和等级信息的建筑对象
      * @param name {string} 建筑名称
@@ -310,7 +309,7 @@
     function build(name, star, level) {
       return Object.assign({star, level}, buildingData[name]);
     }
-  
+
     /**
      * 政策列表
      * @type {*[]}
@@ -320,7 +319,7 @@
       {"type": "all", "multiple": 2}, {"type": "online", "multiple": 1.5}, {"type": "offline", "multiple": 0.5}, {"type": "industry", "multiple": 6},
     ];
     if (policyInput.value) policy = JSON.parse(policyInput.value);
-    
+
     /**
      * 所有加成整理
      * @type {{task: {}, album: {}, link: {}, policy: {}}}
@@ -342,7 +341,7 @@
     };
     if (albumInput.value) bonus.task = JSON.parse(albumInput.value);
     if (taskInput.value) bonus.task = JSON.parse(taskInput.value);
-  
+
     /**
      * 整理政策加成
      */
@@ -352,7 +351,7 @@
       }
     }
     setPolicyBonus();
-  
+
     /**
      * 计算最终加成结果
      * @param active {array} 使用的建筑列表
@@ -362,7 +361,7 @@
     function getBonus(active, silence = true) {
       // 输出用的字符串 = =
       let str = "";
-      
+
       /**
        * 计算建筑产生的整体加成
        */
@@ -386,7 +385,7 @@
         }
       }
       setLinkBonus();
-  
+
       /**
        * 计算其他建筑对目标建筑产生的加成
        * @param target {object} 目标建筑对象
@@ -404,7 +403,7 @@
         }
         return linkBonus;
       }
-  
+
       /**
        * 计算当前任务对目标建筑产生的加成
        * @param target {object} 目标建筑对象
@@ -418,7 +417,7 @@
         }
         return taskBonus;
       }
-  
+
       /**
        * 计算当前政策对目标建筑产生的加成
        * @param target {object} 目标建筑对象
@@ -430,7 +429,7 @@
         policyBonus += extra;
         return policyBonus;
       }
-  
+
       /**
        * 计算当前相册对目标建筑产生的加成
        * @param target {object} 目标建筑对象
@@ -441,7 +440,7 @@
         albumBonus += bonus.album[target.type] + bonus.album.all + bonus.album[status];
         return albumBonus;
       }
-  
+
       /**
        * 计算目标建筑当前获得的所有加成，并打分
        * @param building {object} 目标建筑对象
@@ -453,32 +452,32 @@
         let policyBonus = getPolicyBonus(building);
         let albumBonus  = getAlbumBonus(building);
         let allBonus = (linkBonus * taskBonus * policyBonus * albumBonus);
-  
+
         let starBonus = star[building.star];
         let trueBonus = allBonus * starBonus * building.multiple;
         if (!silence) {
-          console.log(`${building.star} 星建筑: %c${building.name}`, 'color:blue;');
-          console.log(`  单级真实加成倍数: %c${trueBonus.toFixed(3)}%c 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}`, 'color:red;', 'color:black;');
+          console.log(`${building.star} 星建筑: %c${building.name}`, "color:blue;");
+          console.log(`  单级真实加成倍数: %c${trueBonus.toFixed(3)}%c 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}`, "color:red;", "color:black;");
           str += `${building.star} 星建筑: ${building.name}\n`;
           str += `  单级真实加成倍数: ${trueBonus.toFixed(3)} 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}\n`;
         }
         return trueBonus;
       }
-  
+
       if (!silence) {
         console.log("加成明细:", bonus);
         console.log("详情: (红色数值越大，升级性价比越高)");
         str += `加成明细: ${JSON.stringify(bonus)}\n`;
         str += "详情: (单级真实加成倍数数值越大，升级性价比越高)\n";
       }
-  
+
       let value = 0;
       //计算当前组合加成总得分
       active.forEach(c => value += calcBonus(c));
-  
+
       return [value, str];
     }
-  
+
     /**
      * 从可用建筑列表中获得加成得分最大的组合
      * @param buildings {array} 可用建筑对象列表
@@ -486,7 +485,7 @@
      */
     function getBestCombination(buildings) {
       let str = "";
-      
+
       let allCount = 0;
       let bigBonus = 0;
       let bestList = [];
@@ -505,7 +504,7 @@
             break;
         }
       }
-  
+
       /**
        * 遍历当前类型的所有可选组合
        * @param type {array} 某种单一类型建筑对象列表
@@ -521,7 +520,7 @@
           }
         }
       }
-  
+
       // 开始遍历，最多可能有1728000种组合
       getActiveBuilding(house, [], (active) => {
         getActiveBuilding(business, active, (active) => {
@@ -535,15 +534,16 @@
           })
         })
       });
-  
+
       console.log(`组合总数: ${allCount}\n最佳组合:`, bestList, `\n得分系数: ${bigBonus}`);
       str += `组合总数: ${allCount}\n最佳组合: ${JSON.stringify(bestList)}\n得分系数: ${bigBonus}\n`;
+
       // 使用非静默执行打印一次数据
       str += getBonus(bestList, false)[1];
-      
+
       return str;
     }
-  
+
     /**
      * 当前可用的所有建筑对象
      * 目前没有任何关于等级的功能，默认所有建筑等级相等或相差10左右，请手动将低于中位数10级以上的建筑剔除，或者将你认为没用的建筑剔除。
@@ -590,7 +590,7 @@
           buildings.push(build(name, data[name]));
       }
     }
-  
+
     out.innerHTML = getBestCombination(buildings);
   }
 </script>
