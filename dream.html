@@ -16,7 +16,7 @@
       width: 800px;
       resize: none;
     }
-    #policy, #task, #buildings{
+    #policy, #task, #biuding{
       height: 100px;
     }
     #album{
@@ -25,6 +25,7 @@
   </style>
 </head>
 <body>
+  <h1>biuding是故意拼错的</h1>
   <div>说明："house": 住宅类别, "business": 商业类别, "industry": 工业类别, "all": 全部建筑, "online": 在线, "offline": 离线, "goods": 送货（没用）</div>
   <p>
     <label for="policy">政策:</label>
@@ -57,8 +58,8 @@
 }
   </pre>
   <p>
-    <label for="buildings">可用建筑:</label>
-    <textarea class="jsons" name="" id="buildings" cols="30" rows="10"></textarea>
+    <label for="biuding">可用建筑:</label>
+    <textarea class="jsons" name="" id="biuding" cols="30" rows="10"></textarea>
   </p>
   <span>示例：写你想要拿来组合的建筑, 对应值是星级，目前仅按照星级进行排列组合，默认相同等级。非buff低等级建筑奏凯。</span>
   <pre>
@@ -71,7 +72,12 @@
   </pre>
   <button id="biu">biu~</button>
 <script>
+  document.querySelector("#biu").addEventListener("click", biu);
   function biu() {
+    let biudingInput = document.querySelector("#biuding");
+    let policyInput = document.querySelector("#policy");
+    let albumInput = document.querySelector("#album");
+    let taskInput = document.querySelector("#task");
     /**
      * 在线状态，手动输入，在线是online，离线是offline，可以计算离线收益
      */
@@ -285,7 +291,7 @@
     };
   
     /**
-     * 建筑星级倍数信息，直接固定免除每次计算
+     * 建筑星级倍数信息，直接固定免除每次计算，其实就是阶乘
      * @type {{"1": number, "2": number, "3": number, "4": number, "5": number}}
      */
     const star = {1: 1, 2: 2, 3: 6, 4: 24, 5: 120};
@@ -294,7 +300,7 @@
      * 生成带星级和等级信息的建筑对象
      * @param name {string} 建筑名称
      * @param star {number} 建筑星级
-     * @param level {number} 建筑等级（当前作用和实际不匹配）
+     * @param [level] {number} 建筑等级（当前作用和实际不匹配）
      * @returns {object} 建筑对象
      */
     function build(name, star, level) {
@@ -309,7 +315,8 @@
       {"type": "all", "multiple": 1}, {"type": "business", "multiple": 3}, {"type": "house", "multiple": 3},
       {"type": "all", "multiple": 2}, {"type": "online", "multiple": 1.5}, {"type": "offline", "multiple": 0.5}, {"type": "industry", "multiple": 6},
     ];
-  
+    if (policyInput.value) policy = JSON.parse(policyInput.value);
+    
     /**
      * 所有加成整理
      * @type {{task: {}, album: {}, link: {}, policy: {}}}
@@ -329,6 +336,8 @@
         "house": 1.5, "business": 0.6, "industry": 1.5, "all": 0.7, "online": 0.5, "offline": 0.8, "goods": 0.16,
       },
     };
+    if (albumInput.value) bonus.task = JSON.parse(albumInput.value);
+    if (taskInput.value) bonus.task = JSON.parse(taskInput.value);
   
     /**
      * 整理政策加成
@@ -556,6 +565,15 @@
       // build("人民石油", 1, 1),
       // build("商贸中心", 1, 1),
     ];
+
+    if (biudingInput.value) {
+      buildings = [];
+      let data = JSON.parse(biudingInput.value);
+      for (let name in data) {
+        if (data.hasOwnProperty(name))
+          buildings.push(build(name, data[name]));
+      }
+    }
   
     getBestCombination(buildings);
   }
