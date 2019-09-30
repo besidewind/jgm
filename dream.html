@@ -376,7 +376,7 @@
                 bonus.link[buildingBonus.target] += buildingBonus.multiple * Math.pow(2, building.star - 1);
               }
               if (buildingBonus.target === "offline") {
-                bonus.link[buildingBonus.target] += buildingBonus.multiple * (Math.pow(2, building.star - 1) + 1) / 2;
+                bonus.link[buildingBonus.target] += buildingBonus.multiple * ((building.star - 1) * 0.5 + 1);
               }
             } else if (buildingBonus.type !== "name") {
               bonus.link[buildingBonus.target] += buildingBonus.multiple * building.star;
