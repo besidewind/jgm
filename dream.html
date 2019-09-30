@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>家国梦</title>
+</head>
+<body>
+<script>
+  /**
+   * 在线状态，手动输入，在线是online，离线是offline，可以计算离线收益
+   */
+  let status = "online";
+
+  /**
+   * 家园之光加成，手动输入，全国加省份
+   */
+  let extra = 0.2 + 0.15;
+
+  /**
+   * 空中别墅 复兴公馆 人民石油 商贸中心 倍数未知待补充，目前按1倍处理
+   * 所有建筑的基本信息
+   */
+  const buildingData = {
+    "木屋": {
+      "name": "木屋", "type": "house", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "木材厂", "multiple": 1 },
+      ]
+    },
+    "居民楼": {
+      "name": "居民楼", "type": "house", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "便利店", "multiple": 1 },
+      ]
+    },
+    "钢结构房": {
+      "name": "钢结构房", "type": "house", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "钢铁厂", "multiple": 1 },
+      ]
+    },
+    "平房": {
+      "name": "平房", "type": "house", "multiple": 1.1, "quality": "normal",
+      "bonus": [
+        { "type": "type", "target": "house", "multiple": 0.2, },
+      ]
+    },
+    "小型公寓": {
+      "name": "小型公寓", "type": "house", "multiple": 1.18, "quality": "normal",
+      "bonus": [
+        { "type": "goods", "target": "goods", "multiple": 0.1, },
+      ]
+    },
+    "人才公寓": {
+      "name": "人才公寓", "type": "house", "multiple": 1.4, "quality": "rare",
+      "bonus": [
+        { "type": "status", "target": "online", "multiple": 0.2 },
+        { "type": "type", "target": "industry", "multiple": 0.15 },
+      ]
+    },
+    "花园洋房": {
+      "name": "花园洋房", "type": "house", "multiple": 1.02, "quality": "rare",
+      "bonus": [
+        { "type": "name", "target": "商贸中心", "multiple": 1 },
+        { "type": "goods", "target": "goods", "multiple": 0.1 },
+      ]
+    },
+    "中式小楼": {
+      "name": "中式小楼", "type": "house", "multiple": 1.4, "quality": "rare",
+      "bonus": [
+        { "type": "status", "target": "online", "multiple": 0.2 },
+        { "type": "type", "target": "house", "multiple": 0.15 },
+      ]
+    },
+    "空中别墅": {
+      "name": "空中别墅", "type": "house", "multiple": 1, "quality": "legend",
+      "bonus": [
+        { "type": "name", "target": "民食斋", "multiple": 1 },
+        { "type": "status", "target": "online", "multiple": 0.2 },
+      ]
+    },
+    "复兴公馆": {
+      "name": "复兴公馆", "type": "house", "multiple": 1, "quality": "legend",
+      "bonus": [
+        { "type": "status", "target": "offline", "multiple": 0.1 },
+        { "type": "goods", "target": "goods", "multiple": 0.1 },
+      ]
+    },
+    "便利店": {
+      "name": "便利店", "type": "business", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "居民楼", "multiple": 1 },
+      ]
+    },
+    "五金店": {
+      "name": "五金店", "type": "business", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "零件厂", "multiple": 1 },
+      ]
+    },
+    "服装店": {
+      "name": "服装店", "type": "business", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "纺织厂", "multiple": 1 },
+      ]
+    },
+    "菜市场": {
+      "name": "菜市场", "type": "business", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "食品厂", "multiple": 1 },
+      ]
+    },
+    "学校": {
+      "name": "学校", "type": "business", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "图书城", "multiple": 1 },
+      ]
+    },
+    "图书城": {
+      "name": "图书城", "type": "business", "multiple": 1, "quality": "rare",
+      "bonus": [
+        { "type": "name", "target": "学校", "multiple": 1 },
+        { "type": "name", "target": "造纸厂", "multiple": 1 },
+      ]
+    },
+    "商贸中心": {
+      "name": "商贸中心", "type": "business", "multiple": 1, "quality": "rare",
+      "bonus": [
+        { "type": "name", "target": "花园洋房", "multiple": 1 },
+        { "type": "goods", "target": "goods", "multiple": 0.1 },
+      ]
+    },
+    "加油站": {
+      "name": "加油站", "type": "business", "multiple": 1.2, "quality": "rare",
+      "bonus": [
+        { "type": "name", "target": "人民石油", "multiple": 0.5 },
+        { "type": "status", "target": "offline", "multiple": 0.1 },
+      ]
+    },
+    "民食斋": {
+      "name": "民食斋", "type": "business", "multiple": 1.52, "quality": "legend",
+      "bonus": [
+        { "type": "name", "target": "空中别墅", "multiple": 1 },
+        { "type": "status", "target": "online", "multiple": 0.2 },
+      ]
+    },
+    "媒体之声": {
+      "name": "媒体之声", "type": "business", "multiple": 1.61, "quality": "legend",
+      "bonus": [
+        { "type": "status", "target": "offline", "multiple": 1 },
+        { "type": "special", "target": "all", "multiple": 0.05 },
+      ]
+    },
+    "木材厂": {
+      "name": "木材厂", "type": "industry", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "木屋", "multiple": 1 },
+      ]
+    },
+    "食品厂": {
+      "name": "食品厂", "type": "industry", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "菜市场", "multiple": 1 },
+      ]
+    },
+    "造纸厂": {
+      "name": "造纸厂", "type": "industry", "multiple": 1, "quality": "normal",
+      "bonus": [
+        { "type": "name", "target": "图书城", "multiple": 1 },
+      ]
+    },
+    "水厂": {
+      "name": "水厂", "type": "industry", "multiple": 1.26, "quality": "normal",
+      "bonus": [
+        { "type": "status", "target": "offline", "multiple": 0.1 },
+      ]
+    },
+    "电厂": {
+      "name": "电厂", "type": "industry", "multiple": 1.18, "quality": "normal",
+      "bonus": [
+        { "type": "status", "target": "online", "multiple": 0.2 },
+      ]
+    },
+    "钢铁厂": {
+      "name": "钢铁厂", "type": "industry", "multiple": 1, "quality": "rare",
+      "bonus": [
+        { "type": "name", "target": "钢结构房", "multiple": 1 },
+        { "type": "type", "target": "industry", "multiple": 0.15 },
+      ]
+    },
+    "纺织厂": {
+      "name": "纺织厂", "type": "industry", "multiple": 1, "quality": "rare",
+      "bonus": [
+        { "type": "name", "target": "服装店", "multiple": 1 },
+        { "type": "type", "target": "business", "multiple": 0.15 },
+      ]
+    },
+    "零件厂": {
+      "name": "零件厂", "type": "industry", "multiple": 1, "quality": "rare",
+      "bonus": [
+        { "type": "name", "target": "五金店", "multiple": 1 },
+        { "type": "name", "target": "企鹅机械", "multiple": 0.5 },
+      ]
+    },
+    "企鹅机械": {
+      "name": "企鹅机械", "type": "industry", "multiple": 1.33, "quality": "legend",
+      "bonus": [
+        { "type": "name", "target": "零件厂", "multiple": 1 },
+        { "type": "special", "target": "all", "multiple": 0.1 },
+      ]
+    },
+    "人民石油": {
+      "name": "人民石油", "type": "industry", "multiple": 1, "quality": "legend",
+      "bonus": [
+        { "type": "name", "target": "加油站", "multiple": 1 },
+        { "type": "status", "target": "offline", "multiple": 0.1 },
+      ]
+    },
+  };
+
+  /**
+   * 建筑星级倍数信息，直接固定免除每次计算
+   * @type {{"1": number, "2": number, "3": number, "4": number, "5": number}}
+   */
+  const star = {1: 1, 2: 2, 3: 6, 4: 24, 5: 120};
+
+  /**
+   * 生成带星级和等级信息的建筑对象
+   * @param name {string} 建筑名称
+   * @param star {number} 建筑星级
+   * @param level {number} 建筑等级（当前作用和实际不匹配）
+   * @returns {object} 建筑对象
+   */
+  function build(name, star, level) {
+    return Object.assign({star, level}, buildingData[name]);
+  }
+
+  /**
+   * 政策列表
+   * @type {*[]}
+   */
+  let policy = [
+    {"type": "all", "multiple": 1}, {"type": "business", "multiple": 3}, {"type": "house", "multiple": 3},
+    {"type": "all", "multiple": 2}, {"type": "online", "multiple": 1.5}, {"type": "offline", "multiple": 0.5}, {"type": "industry", "multiple": 6},
+  ];
+
+  /**
+   * 所有加成整理
+   * @type {{task: {}, album: {}, link: {}, policy: {}}}
+   */
+  const bonus = {
+    "link": {
+      "house": 0, "business": 0, "industry": 0, "all": 0, "online": 0, "offline": 0, "goods": 0,
+    },
+    "task": {
+      "house": 0, "business": 0, "industry": 0, "all": 0, "online": 0, "offline": 0, "goods": 0,
+      "花园洋房": 2, "钢结构房": 1, "平房": 1,
+    },
+    "policy": {
+      "house": 0, "business": 0, "industry": 0, "all": 0, "online": 0, "offline": 0, "goods": 0,
+    },
+    "album": {
+      "house": 1.5, "business": 0.6, "industry": 1.5, "all": 0.7, "online": 0.5, "offline": 0.8, "goods": 0.16,
+    },
+  };
+
+  /**
+   * 整理政策加成
+   */
+  function setPolicyBonus() {
+    for (let list of policy) {
+      bonus.policy[list.type] += list.multiple;
+    }
+  }
+  setPolicyBonus();
+
+  /**
+   * 计算最终加成结果
+   * @param active {array} 使用的建筑列表
+   * @param silence {boolean} 是否静默执行，遍历时打印日志会导致浏览器卡死，仅单个验证时可选
+   * @returns {number} 加成结果得分
+   */
+  function getBonus(active, silence = true) {
+
+    /**
+     * 计算建筑产生的整体加成
+     */
+    function setLinkBonus() {
+      bonus.link = {
+        "house": 0, "business": 0, "industry": 0, "all": 0, "online": 0, "offline": 0, "goods": 0,
+      };
+      for (let building of active) {
+        for (let buildingBonus of building.bonus) {
+          if (buildingBonus.type === "status") {
+            if (buildingBonus.target === "online") {
+              bonus.link[buildingBonus.target] += buildingBonus.multiple * Math.pow(2, building.star - 1);
+            }
+            if (buildingBonus.target === "offline") {
+              bonus.link[buildingBonus.target] += buildingBonus.multiple * (Math.pow(2, building.star - 1) + 1) / 2;
+            }
+          } else if (buildingBonus.type !== "name") {
+            bonus.link[buildingBonus.target] += buildingBonus.multiple * building.star;
+          }
+        }
+      }
+    }
+    setLinkBonus();
+
+    /**
+     * 计算其他建筑对目标建筑产生的加成
+     * @param target {object} 目标建筑对象
+     * @returns {number} 加成倍数
+     */
+    function getLinkBonus(target) {
+      let linkBonus = 1;
+      linkBonus += bonus.link[target.type] + bonus.link.all + bonus.link[status];
+      for (let building of active) {
+        for (let buildingBonus of building.bonus) {
+          if (buildingBonus.type === "name" && buildingBonus.target === target.name) {
+            linkBonus += buildingBonus.multiple * building.star;
+          }
+        }
+      }
+      return linkBonus;
+    }
+
+    /**
+     * 计算当前任务对目标建筑产生的加成
+     * @param target {object} 目标建筑对象
+     * @returns {number} 加成倍数
+     */
+    function getTaskBonus(target) {
+      let taskBonus = 1;
+      taskBonus += bonus.task[target.type] + bonus.task.all + bonus.task[status];
+      if (bonus.task[target.name]) {
+        taskBonus += bonus.task[target.name]
+      }
+      return taskBonus;
+    }
+
+    /**
+     * 计算当前政策对目标建筑产生的加成
+     * @param target {object} 目标建筑对象
+     * @returns {number} 加成倍数
+     */
+    function getPolicyBonus(target) {
+      let policyBonus = 1;
+      policyBonus += bonus.policy[target.type] + bonus.policy.all + bonus.policy[status];
+      policyBonus += extra;
+      return policyBonus;
+    }
+
+    /**
+     * 计算当前相册对目标建筑产生的加成
+     * @param target {object} 目标建筑对象
+     * @returns {number} 加成倍数
+     */
+    function getAlbumBonus(target) {
+      let albumBonus = 1;
+      albumBonus += bonus.album[target.type] + bonus.album.all + bonus.album[status];
+      return albumBonus;
+    }
+
+    /**
+     * 计算目标建筑当前获得的所有加成，并打分
+     * @param building {object} 目标建筑对象
+     * @returns {number} 加成倍数
+     */
+    function calcBonus(building) {
+      let linkBonus   = getLinkBonus(building);
+      let taskBonus   = getTaskBonus(building);
+      let policyBonus = getPolicyBonus(building);
+      let albumBonus  = getAlbumBonus(building);
+      let allBonus = (linkBonus * taskBonus * policyBonus * albumBonus);
+
+      let starBonus = star[building.star];
+      let trueBonus = allBonus * starBonus * building.multiple;
+      if (!silence) {
+        console.log(`${building.star} 星建筑: %c${building.name}`, 'color:blue;');
+        console.log(`  单级真实加成倍数: %c${trueBonus.toFixed(3)}%c 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}`, 'color:red;', 'color:black;')
+      }
+      return trueBonus;
+    }
+
+    if (!silence) {
+      console.log("加成明细:", bonus);
+      console.log("详情: (红色数值越大，升级性价比越高)");
+    }
+
+    let value = 0;
+    //计算当前组合加成总得分
+    active.forEach(c => value += calcBonus(c));
+
+    return value;
+  }
+
+  /**
+   * 从可用建筑列表中获得加成得分最大的组合
+   * @param buildings {array} 可用建筑对象列表
+   */
+  function getBestCombination(buildings) {
+    let allCount = 0;
+    let bigBonus = 0;
+    let bestList = [];
+    let house = [], business = [], industry = [];
+    //将建筑分类
+    for (let building of buildings) {
+      switch(building.type) {
+        case "house":
+          house.push(building);
+          break;
+        case "business":
+          business.push(building);
+          break;
+        case "industry":
+          industry.push(building);
+          break;
+      }
+    }
+
+    /**
+     * 遍历当前类型的所有可选组合
+     * @param type {array} 某种单一类型建筑对象列表
+     * @param active {array} 透传建筑对象列表
+     * @param callback {function} 回调函数（误）
+     */
+    function getActiveBuilding(type, active, callback) {
+      for (let i = 0; i < type.length - 2; i++) {
+        for (let j = i + 1; j < type.length - 1; j++) {
+          for (let k = j + 1; k < type.length; k++) {
+            callback(active.concat([type[i], type[j], type[k]]));
+          }
+        }
+      }
+    }
+
+    // 开始遍历，最多可能有1728000种组合
+    getActiveBuilding(house, [], (active) => {
+      getActiveBuilding(business, active, (active) => {
+        getActiveBuilding(industry, active, (active) => {
+          let tempBonus = getBonus(active);
+          if (tempBonus > bigBonus) {
+            bigBonus = tempBonus;
+            bestList = active;
+          }
+          allCount++;
+        })
+      })
+    });
+
+    console.log(`组合总数: ${allCount}\n最佳组合:`, bestList, `\n得分系数: ${bigBonus}`);
+    // 使用非静默执行打印一次数据
+    getBonus(bestList, false);
+  }
+
+  /**
+   * 当前可用的所有建筑对象
+   * 目前没有任何关于等级的功能，默认所有建筑等级相等或相差10左右，请手动将低于中位数10级以上的建筑剔除，或者将你认为没用的建筑剔除。
+   * 不希望使用在线buff建筑时直接删了就好，简单易懂
+   * 每种建筑类型至少有三个，未测试不符合规则的情况，自求多福
+   * @type {*[]}
+   */
+  let buildings = [
+    build("木屋", 4, 475),
+    build("居民楼", 4, 475),
+    build("钢结构房", 4, 450),
+    build("平房", 4, 450),
+    build("小型公寓", 2, 450),
+    build("人才公寓", 2, 450),
+    build("花园洋房", 1, 450),
+    build("中式小楼", 1, 450),
+    build("便利店", 4, 450),
+    build("五金店", 4, 450),
+    build("服装店", 3, 450),
+    build("菜市场", 4, 475),
+    build("学校", 3, 450),
+    build("图书城", 2, 450),
+    build("加油站", 1, 450),
+    build("民食斋", 1, 450),
+    build("媒体之声", 1, 450),
+    build("木材厂", 4, 450),
+    build("食品厂", 4, 475),
+    build("造纸厂", 4, 450),
+    build("水厂", 2, 450),
+    build("电厂", 3, 450),
+    build("钢铁厂", 3, 450),
+    build("纺织厂", 2, 450),
+    build("零件厂", 2, 450),
+    build("企鹅机械", 1, 450),
+    // build("人民石油", 1, 1),
+    // build("商贸中心", 1, 1),
+  ];
+
+  getBestCombination(buildings);
+</script>
+</body>
+</html>
