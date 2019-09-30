@@ -60,13 +60,15 @@
     <label for="biuding">可用建筑:</label>
     <textarea class="jsons" name="" id="biuding" cols="30" rows="10"></textarea>
   </p>
-  <span>示例：写你想要拿来组合的建筑, 对应值是星级，目前仅按照星级进行排列组合，默认相同等级。非buff低等级建筑奏凯。</span>
+  <span>示例：写你想要拿来组合的建筑, 对应值是星级+当前收益（在建筑中心里看）的数组。记得带单位，最终结果会有误差，因为收益是四舍五入的。</span>
   <pre>
 {
-  "木屋": 4,"居民楼": 4,"钢结构房": 4,"平房": 4,"小型公寓": 2,"人才公寓": 2,"花园洋房": 1,
-  "中式小楼": 1,"便利店": 4,"五金店": 4,"服装店": 3,"菜市场": 4,"学校": 3,"图书城": 2,"加油站": 1,
-  "民食斋": 1,"媒体之声": 1,"木材厂": 4,"食品厂": 4,"造纸厂": 4,
-  "水厂": 2,"电厂": 3,"钢铁厂": 3,"纺织厂": 2,"零件厂": 2,"企鹅机械": 1
+  "木屋": [4, "546m"], "居民楼": [4, "293m"], "钢结构房": [4, "155m"], "平房": [4, "322m"], "小型公寓": [2, "15.2m"],
+  "人才公寓": [2, "34.1m"], "花园洋房": [1, "6.61m"], "中式小楼": [1, "9.06m"], "便利店": [4, "293m"], "五金店": [4, "155m"],
+  "服装店": [3, "155m"], "菜市场": [4, "293m"], "学校": [4, "293m"], "图书城": [3, "73.2m"], "加油站": [1, "7.79m"],
+  "民食斋": [1, "18.5m"], "媒体之声": [1, "10.4m"], "商贸中心": [1, "6.61m"], "木材厂": [4, "293m"], "食品厂": [4, "293m"],
+  "造纸厂": [4, "293m"], "水厂": [3, "48.9m"], "电厂": [3, "86.4m"], "钢铁厂": [3, "38.8m"], "纺织厂": [3, "38.8m"],
+  "零件厂": [2, "12.9m"], "企鹅机械": [1, "8.61m"], "人民石油": [1, "6.47m"],
 }
   </pre>
   <button id="biu">biu~</button><span> ← 别点它</span>
@@ -303,11 +305,31 @@
      * 生成带星级和等级信息的建筑对象
      * @param name {string} 建筑名称
      * @param star {number} 建筑星级
-     * @param [level] {number} 建筑等级（当前作用和实际不匹配）
+     * @param [earn] {number} 当前秒收入
      * @returns {object} 建筑对象
      */
-    function build(name, star, level) {
-      return Object.assign({star, level}, buildingData[name]);
+    function build(name, star, earn) {
+      let data = {star};
+      if (earn) {
+        let num = parseFloat(earn);
+        let multiple = 1;
+        switch (earn.match(/.$/)[0].toLowerCase()) {
+          case "a":
+            multiple *= 1e3;
+          case "t":
+            multiple *= 1e3;
+          case "b":
+            multiple *= 1e3;
+          case "m":
+            multiple *= 1e3;
+          case "k":
+            multiple *= 1e3;
+          default:
+            num *= multiple;
+        }
+        data.earn = num;
+      }
+      return Object.assign(data, buildingData[name]);
     }
 
     /**
@@ -316,7 +338,7 @@
      */
     let policy = [
       {"type": "all", "multiple": 1}, {"type": "business", "multiple": 3}, {"type": "house", "multiple": 3},
-      {"type": "all", "multiple": 2}, {"type": "online", "multiple": 1.5}, {"type": "offline", "multiple": 0.5}, {"type": "industry", "multiple": 6},
+      {"type": "all", "multiple": 2}, {"type": "online", "multiple": 2}, {"type": "offline", "multiple": 1}, {"type": "industry", "multiple": 6},
     ];
     if (policyInput.value) policy = JSON.parse(policyInput.value);
 
@@ -329,8 +351,8 @@
         "house": 0, "business": 0, "industry": 0, "all": 0, "online": 0, "offline": 0, "goods": 0,
       },
       "task": {
-        "house": 0, "business": 0, "industry": 0, "all": 0, "online": 0, "offline": 0, "goods": 0,
-        "花园洋房": 2, "钢结构房": 1, "平房": 1,
+        "house": 0, "business": 0, "industry": 0, "all": 0, "online": 0, "offline": 0, "goods": 0.2,
+        "便利店": 1, "造纸厂": 1,
       },
       "policy": {
         "house": 0, "business": 0, "industry": 0, "all": 0, "online": 0, "offline": 0, "goods": 0,
@@ -356,7 +378,7 @@
      * 计算最终加成结果
      * @param active {array} 使用的建筑列表
      * @param silence {boolean} 是否静默执行，遍历时打印日志会导致浏览器卡死，仅单个验证时可选
-     * @returns {array} [加成结果得分, 输出用字符串]
+     * @returns {array} [加成结果得分，实际收益，输出用字符串]
      */
     function getBonus(active, silence = true) {
       // 输出用的字符串 = =
@@ -444,7 +466,7 @@
       /**
        * 计算目标建筑当前获得的所有加成，并打分
        * @param building {object} 目标建筑对象
-       * @returns {number} 加成倍数
+       * @returns {array} [加成倍数，实际收益]
        */
       function calcBonus(building) {
         let linkBonus   = getLinkBonus(building);
@@ -455,27 +477,41 @@
 
         let starBonus = star[building.star];
         let trueBonus = allBonus * starBonus * building.multiple;
+        // if (!silence) {
+        //   console.log(`${building.star} 星建筑: %c${building.name}`, "color:blue;");
+        //   console.log(`  单级真实加成倍数: %c${trueBonus.toFixed(3)}%c 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}`, "color:red;", "color:black;");
+        //   str += `${building.star} 星建筑: ${building.name}\n`;
+        //   str += `  单级真实加成倍数: ${trueBonus.toFixed(3)} 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}\n`;
+        // }
+
+        let trueEarn = allBonus * building.earn;
         if (!silence) {
-          console.log(`${building.star} 星建筑: %c${building.name}`, "color:blue;");
-          console.log(`  单级真实加成倍数: %c${trueBonus.toFixed(3)}%c 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}`, "color:red;", "color:black;");
-          str += `${building.star} 星建筑: ${building.name}\n`;
-          str += `  单级真实加成倍数: ${trueBonus.toFixed(3)} 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}\n`;
+          console.log(`${building.star} 星建筑: %c${building.name}%c  最终收益: %c${trueEarn.toFixed()}`, "color:blue;", "color:black;", "color:red;");
+          console.log(`  最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}`);
+          str += `${building.star} 星建筑: ${building.name}  最终收益: ${trueEarn.toFixed()}\n`;
+          str += `  最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}\n`;
         }
-        return trueBonus;
+
+        return [trueBonus, trueEarn];
       }
 
       if (!silence) {
         console.log("加成明细:", bonus);
-        console.log("详情: (红色数值越大，升级性价比越高)");
+        console.log("详情:");
         str += `加成明细: ${JSON.stringify(bonus)}\n`;
-        str += "详情: (单级真实加成倍数数值越大，升级性价比越高)\n";
+        str += "详情:\n";
       }
 
       let value = 0;
+      let earn = 0;
       //计算当前组合加成总得分
-      active.forEach(c => value += calcBonus(c));
+      active.forEach(c => {
+        let res = calcBonus(c);
+        value += res[0];
+        earn += res[1];
+      });
 
-      return [value, str];
+      return [value, earn, str];
     }
 
     /**
@@ -488,6 +524,7 @@
 
       let allCount = 0;
       let bigBonus = 0;
+      let bigEarn = 0;
       let bestList = [];
       let house = [], business = [], industry = [];
       //将建筑分类
@@ -525,9 +562,11 @@
       getActiveBuilding(house, [], (active) => {
         getActiveBuilding(business, active, (active) => {
           getActiveBuilding(industry, active, (active) => {
-            let tempBonus = getBonus(active)[0];
-            if (tempBonus > bigBonus) {
-              bigBonus = tempBonus;
+            let res = getBonus(active);
+            let tempBonus = res[0];
+            let tempEarn = res[1];
+            if (tempEarn > bigEarn) {
+              bigEarn = tempEarn;
               bestList = active;
             }
             allCount++;
@@ -535,11 +574,11 @@
         })
       });
 
-      console.log(`组合总数: ${allCount}\n最佳组合:`, bestList, `\n得分系数: ${bigBonus}`);
-      str += `组合总数: ${allCount}\n最佳组合: ${JSON.stringify(bestList)}\n得分系数: ${bigBonus}\n`;
+      console.log(`组合总数: ${allCount}\n最佳组合:`, bestList, `\n最终收益: ${bigEarn}`);
+      str += `组合总数: ${allCount}\n最佳组合: ${JSON.stringify(bestList)}\n最终收益: ${bigEarn}\n`;
 
       // 使用非静默执行打印一次数据
-      str += getBonus(bestList, false)[1];
+      str += getBonus(bestList, false)[2];
 
       return str;
     }
@@ -552,34 +591,34 @@
      * @type {*[]}
      */
     let buildings = [
-      build("木屋", 4, 475),
-      build("居民楼", 4, 475),
-      build("钢结构房", 4, 450),
-      build("平房", 4, 450),
-      build("小型公寓", 2, 450),
-      build("人才公寓", 2, 450),
-      build("花园洋房", 1, 450),
-      build("中式小楼", 1, 450),
-      build("便利店", 4, 450),
-      build("五金店", 4, 450),
-      build("服装店", 3, 450),
-      build("菜市场", 4, 475),
-      build("学校", 3, 450),
-      build("图书城", 2, 450),
-      build("加油站", 1, 450),
-      build("民食斋", 1, 450),
-      build("媒体之声", 1, 450),
-      build("木材厂", 4, 450),
-      build("食品厂", 4, 475),
-      build("造纸厂", 4, 450),
-      build("水厂", 2, 450),
-      build("电厂", 3, 450),
-      build("钢铁厂", 3, 450),
-      build("纺织厂", 2, 450),
-      build("零件厂", 2, 450),
-      build("企鹅机械", 1, 450),
-      // build("人民石油", 1, 1),
-      // build("商贸中心", 1, 1),
+      build("木屋", 4, "546m"),
+      build("居民楼", 4, "293m"),
+      build("钢结构房", 4, "155m"),
+      build("平房", 4, "322m"),
+      build("小型公寓", 2, "15.2m"),
+      build("人才公寓", 2, "34.1m"),
+      build("花园洋房", 1, "6.61m"),
+      build("中式小楼", 1, "9.06m"),
+      build("便利店", 4, "293m"),
+      build("五金店", 4, "155m"),
+      build("服装店", 3, "155m"),
+      build("菜市场", 4, "293m"),
+      build("学校", 4, "293m"),
+      build("图书城", 3, "73.2m"),
+      build("加油站", 1, "7.79m"),
+      build("民食斋", 1, "18.5m"),
+      build("媒体之声", 1, "10.4m"),
+      build("商贸中心", 1, "6.61m"),
+      build("木材厂", 4, "293m"),
+      build("食品厂", 4, "293m"),
+      build("造纸厂", 4, "293m"),
+      build("水厂", 3, "48.9m"),
+      build("电厂", 3, "86.4m"),
+      build("钢铁厂", 3, "38.8m"),
+      build("纺织厂", 3, "38.8m"),
+      build("零件厂", 2, "12.9m"),
+      build("企鹅机械", 1, "8.61m"),
+      build("人民石油", 1, "6.47m"),
     ];
 
     if (biudingInput.value) {
@@ -587,7 +626,7 @@
       let data = JSON.parse(biudingInput.value);
       for (let name in data) {
         if (data.hasOwnProperty(name))
-          buildings.push(build(name, data[name]));
+          buildings.push(build(name, data[name][0], data[name[1]]));
       }
     }
 
