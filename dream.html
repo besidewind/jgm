@@ -70,7 +70,8 @@
   "水厂": 2,"电厂": 3,"钢铁厂": 3,"纺织厂": 2,"零件厂": 2,"企鹅机械": 1
 }
   </pre>
-  <button id="biu">biu~</button>
+  <button id="biu">biu~</button><span> ← 别点它</span>
+  <pre id="out"></pre>
 <script>
   document.querySelector("#biu").addEventListener("click", biu);
   function biu() {
@@ -78,6 +79,9 @@
     let policyInput = document.querySelector("#policy");
     let albumInput = document.querySelector("#album");
     let taskInput = document.querySelector("#task");
+    
+    let out = document.querySelector("#out");
+    
     /**
      * 在线状态，手动输入，在线是online，离线是offline，可以计算离线收益
      */
@@ -353,10 +357,12 @@
      * 计算最终加成结果
      * @param active {array} 使用的建筑列表
      * @param silence {boolean} 是否静默执行，遍历时打印日志会导致浏览器卡死，仅单个验证时可选
-     * @returns {number} 加成结果得分
+     * @returns {array} [加成结果得分, 输出用字符串]
      */
     function getBonus(active, silence = true) {
-  
+      // 输出用的字符串 = =
+      let str = "";
+      
       /**
        * 计算建筑产生的整体加成
        */
@@ -452,7 +458,9 @@
         let trueBonus = allBonus * starBonus * building.multiple;
         if (!silence) {
           console.log(`${building.star} 星建筑: %c${building.name}`, 'color:blue;');
-          console.log(`  单级真实加成倍数: %c${trueBonus.toFixed(3)}%c 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}`, 'color:red;', 'color:black;')
+          console.log(`  单级真实加成倍数: %c${trueBonus.toFixed(3)}%c 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}`, 'color:red;', 'color:black;');
+          str += `${building.star} 星建筑: ${building.name}\n`;
+          str += `  单级真实加成倍数: ${trueBonus.toFixed(3)} 最终倍数: ${allBonus.toFixed(3)} 联动倍数: ${linkBonus.toFixed(3)} 任务倍数: ${taskBonus.toFixed(3)} 政策倍数: ${policyBonus.toFixed(3)} 相册倍数: ${albumBonus.toFixed(3)}\n`;
         }
         return trueBonus;
       }
@@ -460,20 +468,25 @@
       if (!silence) {
         console.log("加成明细:", bonus);
         console.log("详情: (红色数值越大，升级性价比越高)");
+        str += `加成明细: ${JSON.stringify(bonus)}\n`;
+        str += "详情: (单级真实加成倍数数值越大，升级性价比越高)\n";
       }
   
       let value = 0;
       //计算当前组合加成总得分
       active.forEach(c => value += calcBonus(c));
   
-      return value;
+      return [value, str];
     }
   
     /**
      * 从可用建筑列表中获得加成得分最大的组合
      * @param buildings {array} 可用建筑对象列表
+     * @returns {string} 输出用字符串
      */
     function getBestCombination(buildings) {
+      let str = "";
+      
       let allCount = 0;
       let bigBonus = 0;
       let bestList = [];
@@ -513,7 +526,7 @@
       getActiveBuilding(house, [], (active) => {
         getActiveBuilding(business, active, (active) => {
           getActiveBuilding(industry, active, (active) => {
-            let tempBonus = getBonus(active);
+            let tempBonus = getBonus(active)[0];
             if (tempBonus > bigBonus) {
               bigBonus = tempBonus;
               bestList = active;
@@ -524,8 +537,11 @@
       });
   
       console.log(`组合总数: ${allCount}\n最佳组合:`, bestList, `\n得分系数: ${bigBonus}`);
+      str += `组合总数: ${allCount}\n最佳组合: ${JSON.stringify(bestList)}\n得分系数: ${bigBonus}\n`;
       // 使用非静默执行打印一次数据
-      getBonus(bestList, false);
+      str += getBonus(bestList, false)[1];
+      
+      return str;
     }
   
     /**
@@ -575,7 +591,7 @@
       }
     }
   
-    getBestCombination(buildings);
+    out.innerHTML = getBestCombination(buildings);
   }
 </script>
 </body>
